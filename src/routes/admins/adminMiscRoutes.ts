@@ -27,6 +27,8 @@ const adminMiscRouter: Router = Router();
 adminMiscRouter.use(bodyParser.json());
 
 import { FirebaseApp, initializeApp } from "firebase/app";
+import adminAccountInterface from "../../interfaces/accounts/adminAccountInterface";
+import userAccountInterface from "../../interfaces/accounts/userAccountInterface";
 
 // * PRIVATE, PLEASE HIDE. *
 const firebaseConfig = {
@@ -112,6 +114,65 @@ adminMiscRouter
         .json({ message: "Failure in updating information." });
     }
   });
+
+// fetch a user/admin of the system
+adminMiscRouter
+  .route("/search")
+  .post(async (req: Request, res: Response) => {
+  
+  const targetCollection : string = req.body.collectionName === "admin" ? "admin" : "user";
+
+  // queried email for search
+  const docRef: DocumentReference<DocumentData, DocumentData> = doc(
+    firestoreDatabase,
+    targetCollection,
+    req.body.queriedEmailAddress
+  );
+
+  const docSnap: DocumentSnapshot<unknown, DocumentData> = await getDoc(docRef);
+  try {
+    res.setHeader("Content-Type", "application/JSON");
+    if (
+      req.body.emailAddress === null ||
+      (req.body.emailAddress === "" && req.body.password === null) ||
+      req.body.password === ""
+    ) {
+      res
+        .status(codes["4xx_CLIENT_ERROR"].UNAUTHORIZED)
+        .json({ message: "Bad request." });
+    } else {
+      if (docSnap.exists()) {
+        const auth: Auth = getAuth();
+        await signInWithEmailAndPassword(
+          auth,
+          req.body.emailAddress,
+          req.body.password
+        )
+          .then(() => {
+            // Signed in
+            const data : (adminAccountInterface | userAccountInterface) = docSnap.data() as (adminAccountInterface | userAccountInterface);
+            res.status(codes["2xx_SUCCESS"].OK).send(data);
+          })
+          .catch((error) => {
+            console.log(error);
+            res
+              .setHeader("Content-Type", "application/JSON")
+              .status(codes["4xx_CLIENT_ERROR"].NOT_FOUND)
+              .json({ message: "User not found." });
+          });
+      } else {
+        res
+          .status(codes["4xx_CLIENT_ERROR"].NOT_FOUND)
+          .json({ message: "User not found." });
+      }
+    }
+  } catch (Exception) {
+    res
+      .setHeader("Content-Type", "application/JSON")
+      .status(codes["4xx_CLIENT_ERROR"].BAD_REQUEST)
+      .json({ message: `${Exception}` });
+  }
+});
 
 // update profile picture
 adminMiscRouter
