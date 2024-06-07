@@ -163,7 +163,7 @@ userTransactionalRouter.route('/update-item-validity').post(async (req: Request,
 
 
 // delete basura/item
-userTransactionalRouter.route('/add-items').post(async (req: Request, res: Response) => {
+userTransactionalRouter.route('/delete-items').post(async (req: Request, res: Response) => {
   const targetCollectionName: string = "items";
   const { emailAddress, password, itemId, itemName} = req.body;
   res.setHeader('Content-Type', 'application/JSON');
@@ -198,7 +198,7 @@ userTransactionalRouter.route('/add-items').post(async (req: Request, res: Respo
     }
     // delete if it exists
     else{
-      deleteDoc(queriedDocRef); 
+      deleteDoc(queriedDocRef); // delete item
     }
 
     return res.status(codes['2xx_SUCCESS'].OK).json({
