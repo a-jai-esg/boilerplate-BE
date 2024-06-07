@@ -63,19 +63,20 @@ adminAccessRouter.route("/").post(async (req: Request, res: Response) => {
 
 // login
 adminAccessRouter.route("/login").post(async (req: Request, res: Response) => {
+  const request = req.body;
   const docRef: any = doc(
     firestoreDatabase,
     collectionName,
-    req.body.emailAddress
+    request.emailAddress
   );
 
   const docSnap: DocumentSnapshot<unknown, DocumentData> = await getDoc(docRef);
   try {
     res.setHeader("Content-Type", "application/JSON");
     if (
-      req.body.emailAddress === null ||
-      (req.body.emailAddress === "" && req.body.password === null) ||
-      req.body.password === ""
+      request.emailAddress === null ||
+      (request.emailAddress === "" && request.password === null) ||
+      request.password === ""
     ) {
       res
         .status(codes["4xx_CLIENT_ERROR"].UNAUTHORIZED)
@@ -85,8 +86,8 @@ adminAccessRouter.route("/login").post(async (req: Request, res: Response) => {
         const auth: Auth = getAuth();
         await signInWithEmailAndPassword(
           auth,
-          req.body.emailAddress,
-          req.body.password
+          request.emailAddress,
+          request.password
         )
           .then(() => {
             // Signed in
@@ -118,12 +119,13 @@ adminAccessRouter.route("/login").post(async (req: Request, res: Response) => {
 adminAccessRouter
   .route("/register")
   .post(async (req: Request, res: Response) => {
+      const request = req.body;
     try {
       res.setHeader("Content-Type", "application/JSON");
       const docRef = doc(
         firestoreDatabase,
         collectionName,
-        req.body.emailAddress
+        request.emailAddress
       );
       const docSnap: DocumentSnapshot<DocumentData, DocumentData> =
         await getDoc(docRef);
@@ -141,8 +143,8 @@ adminAccessRouter
         const adminAccessCredential: UserCredential =
           await createUserWithEmailAndPassword(
             auth,
-            req.body.emailAddress,
-            req.body.password
+            request.emailAddress,
+            request.password
           );
 
         // Retrieve adminAccess details
@@ -151,17 +153,17 @@ adminAccessRouter
         const adminAccessObject: adminAccountInterface = {
           accountId: adminAccess.uid,
           profilePicture: null,
-          emailAddress: req.body.emailAddress,
-          fullName: req.body.fullName != null ? req.body.fullName : null,
+          emailAddress: request.emailAddress,
+          fullName: request.fullName != null ? request.fullName : null,
         };
 
         // Update adminAccess profile
-        await updateProfile(adminAccess, { displayName: req.body.fullName });
+        await updateProfile(adminAccess, { displayName: request.fullName });
 
         // Write to firestore
         await setDoc(docRef, adminAccessObject);
         return res.status(codes["2xx_SUCCESS"].OK).json({
-          message: `Welcome, Aboard, Admin. ${req.body.fullName}`,
+          message: `Welcome, Aboard, Admin. ${request.fullName}`,
         });
       } catch (error) {
         console.log(error);

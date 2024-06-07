@@ -61,10 +61,11 @@ adminMiscRouter.route("/").post(async (req: Request, res: Response) => {
 adminMiscRouter
   .route("/update-name")
   .post(async (req: Request, res: Response) => {
+    const request = req.body;
     const docRef: any = doc(
       firestoreDatabase,
       collectionName,
-      req.body.emailAddress
+      request.emailAddress
     );
     const docSnap: DocumentSnapshot<unknown, DocumentData> = await getDoc(
       docRef
@@ -84,11 +85,11 @@ adminMiscRouter
       else {
         try {
           await updateDoc(docRef, {
-            fullName: req.body.fullName,
+            fullName: request.fullName,
           })
             .then(() => {
               res.status(codes["2xx_SUCCESS"].OK).json({
-                message: `Updated information for ${req.body.emailAddress}`,
+                message: `Updated information for ${request.emailAddress}`,
               });
             })
             .catch((e) => {
@@ -116,26 +117,35 @@ adminMiscRouter
   });
 
 // fetch a user/admin of the system
-adminMiscRouter
-  .route("/search")
-  .post(async (req: Request, res: Response) => {
-  
-  const targetCollection : string = req.body.collectionName === "admin" ? "admin" : "user";
+adminMiscRouter.route("/search").post(async (req: Request, res: Response) => {
+  const request = req.body;
+  let targetCollection: string = "";
+  if (request.collectionName !== null) {
+    if (request.collectionName === "admins") {
+      targetCollection = request.collectionName;
+    } else if (request.collectionName === "merchants") {
+      targetCollection = request.collectionName;
+    } else {
+      targetCollection = "users";
+    }
+  } else {
+    targetCollection = "users";
+  }
 
   // queried email for search
   const docRef: DocumentReference<DocumentData, DocumentData> = doc(
     firestoreDatabase,
     targetCollection,
-    req.body.queriedEmailAddress
+    request.queriedEmailAddress
   );
 
   const docSnap: DocumentSnapshot<unknown, DocumentData> = await getDoc(docRef);
   try {
     res.setHeader("Content-Type", "application/JSON");
     if (
-      req.body.emailAddress === null ||
-      (req.body.emailAddress === "" && req.body.password === null) ||
-      req.body.password === ""
+      request.emailAddress === null ||
+      (request.emailAddress === "" && request.password === null) ||
+      request.password === ""
     ) {
       res
         .status(codes["4xx_CLIENT_ERROR"].UNAUTHORIZED)
@@ -145,12 +155,13 @@ adminMiscRouter
         const auth: Auth = getAuth();
         await signInWithEmailAndPassword(
           auth,
-          req.body.emailAddress,
-          req.body.password
+          request.emailAddress,
+          request.password
         )
           .then(() => {
             // Signed in
-            const data : (adminAccountInterface | userAccountInterface) = docSnap.data() as (adminAccountInterface | userAccountInterface);
+            const data: adminAccountInterface | userAccountInterface =
+              docSnap.data() as adminAccountInterface | userAccountInterface;
             res.status(codes["2xx_SUCCESS"].OK).send(data);
           })
           .catch((error) => {
@@ -178,10 +189,11 @@ adminMiscRouter
 adminMiscRouter
   .route("/update-profile-picture")
   .post(async (req: Request, res: Response) => {
+    const request = req.body;
     const docRef: any = doc(
       firestoreDatabase,
       collectionName,
-      req.body.emailAddress
+      request.emailAddress
     );
 
     const docSnap: DocumentSnapshot<unknown, DocumentData> = await getDoc(
@@ -204,16 +216,16 @@ adminMiscRouter
           const auth: Auth = getAuth();
           await signInWithEmailAndPassword(
             auth,
-            req.body.emailAddress,
-            req.body.password
+            request.emailAddress,
+            request.password
           )
             .then(() => {
               updateDoc(docRef, {
-                profilePicture: req.body.profilePictureURL,
+                profilePicture: request.profilePictureURL,
               })
                 .then(() => {
                   res.status(codes["2xx_SUCCESS"].OK).json({
-                    message: `Updated information for ${req.body.emailAddress}`,
+                    message: `Updated information for ${request.emailAddress}`,
                   });
                 })
                 .catch((e) => {
@@ -252,10 +264,11 @@ adminMiscRouter
 adminMiscRouter
   .route("/change-password")
   .post(async (req: Request, res: Response) => {
+    const request = req.body;
     const docRef: any = doc(
       firestoreDatabase,
       collectionName,
-      req.body.emailAddress
+      request.emailAddress
     );
     const docSnap: DocumentSnapshot<unknown, DocumentData> = await getDoc(
       docRef
@@ -277,11 +290,11 @@ adminMiscRouter
           const auth: Auth = getAuth();
           await signInWithEmailAndPassword(
             auth,
-            req.body.emailAddress,
-            req.body.password
+            request.emailAddress,
+            request.password
           )
             .then((data) => {
-              updatePassword(data.user, req.body.newPassword);
+              updatePassword(data.user, request.newPassword);
               res
                 .setHeader("Content-Type", "application/JSON")
                 .status(codes["2xx_SUCCESS"].OK)
@@ -306,19 +319,20 @@ adminMiscRouter
 
 // sign-out/logout
 adminMiscRouter.route("/logout").post(async (req: Request, res: Response) => {
+  const request = req.body;
   const docRef: DocumentReference<DocumentData, DocumentData> = doc(
     firestoreDatabase,
     collectionName,
-    req.body.emailAddress
+    request.emailAddress
   );
   const docSnap: DocumentSnapshot<unknown, DocumentData> = await getDoc(docRef);
 
   try {
     res.setHeader("Content-Type", "application/JSON");
     if (
-      req.body.emailAddress === null ||
-      (req.body.emailAddress === "" && req.body.password === null) ||
-      req.body.password === ""
+      request.emailAddress === null ||
+      (request.emailAddress === "" && request.password === null) ||
+      request.password === ""
     ) {
       res
         .status(codes["4xx_CLIENT_ERROR"].BAD_REQUEST)
@@ -328,8 +342,8 @@ adminMiscRouter.route("/logout").post(async (req: Request, res: Response) => {
         const auth: Auth = getAuth();
         signInWithEmailAndPassword(
           auth,
-          req.body.emailAddress,
-          req.body.password
+          request.emailAddress,
+          request.password
         )
           .then(() => {
             signOut(auth);

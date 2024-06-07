@@ -11,6 +11,7 @@ import userMiscRouter from "./routes/users/userMiscRoutes";
 import adminAccessRouter from "./routes/admins/adminAccessRoutes";
 import adminAdministrativeRouter from "./routes/admins/adminAdministrativeRoutes";
 import adminMiscRouter from "./routes/admins/adminMiscRoutes";
+import userTransactionalRouter from "./routes/users/userTransactionalRoutes";
 
 // define express middleware
 const PORT: number = 5174; // define port number
@@ -25,6 +26,7 @@ expressApplication.use(bodyParser.json());
 // define routes
 expressApplication.use("/", userAccessRouter); // use the default "slash" endpoint for the users' access only
 expressApplication.use("/users", userMiscRouter); // use this for user's interaction and transaction to the system.
+expressApplication.use("/users/transactional", userTransactionalRouter) // use this for user's transaction
 
 expressApplication.use("/admin", adminAccessRouter); // use for admin access only
 expressApplication.use("/admin/miscellaneous", adminMiscRouter); // same as with /users endpoint but for admins

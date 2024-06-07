@@ -3,4 +3,6 @@ export default interface userAccountInterface {
   profilePicture: string | null;
   emailAddress: string;
   fullName: string | null;
+  roles: string | null;
+  pointsBalance: number | null;
 }

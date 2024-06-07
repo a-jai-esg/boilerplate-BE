@@ -90,19 +90,21 @@ adminAdministrativeRouter
 adminAdministrativeRouter
   .route("/delete-user-account")
   .post(async (req: Request, res: Response) => {
+    const request = req.body;
+
     const docRef: any = doc(
       firestoreDatabase,
       adminCollection,
-      req.body.emailAddress
+      request.emailAddress
     );
     const docSnap = await getDoc(docRef);
 
     try {
       res.setHeader("Content-Type", "application/JSON");
       if (
-        req.body.emailAddress === null ||
-        (req.body.emailAddress === "" && req.body.password === null) ||
-        req.body.password === ""
+        request.emailAddress === null ||
+        (request.emailAddress === "" && request.password === null) ||
+        request.password === ""
       ) {
         res
           .status(codes["4xx_CLIENT_ERROR"].UNAUTHORIZED)
@@ -112,18 +114,18 @@ adminAdministrativeRouter
           const auth = getAuth();
           await signInWithEmailAndPassword(
             auth,
-            req.body.emailAddress,
-            req.body.password
+            request.emailAddress,
+            request.password
           )
             .then(async () => {
               // Signed in
-
               // Fetch user's data
               const userDocRef = doc(
                 firestoreDatabase,
                 userCollection,
-                req.body.userEmailAddress
+                request.userEmailAddress
               );
+
               const userDocSnap: DocumentSnapshot<DocumentData, DocumentData> =
                 await getDoc(userDocRef);
 
@@ -174,5 +176,6 @@ adminAdministrativeRouter
         .send({ message: `${Exception}` });
     }
   });
+
 
 export default adminAdministrativeRouter;
