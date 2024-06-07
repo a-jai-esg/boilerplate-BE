@@ -2,7 +2,7 @@
 import userAccountInterface from "../../interfaces/accounts/userAccountInterface";
 import codes from "../../common/constants/http-codes.json";
 import * as bodyParser from "body-parser";
-import { Router, Request, Response } from "express";
+import { Router, Request, Response} from "express";
 
 // firebase firestore functions
 import {
@@ -11,6 +11,8 @@ import {
   getDoc,
   Firestore,
   updateDoc,
+  setDoc,
+  deleteDoc,
 } from "firebase/firestore";
 
 // firebase auth functions
@@ -20,6 +22,7 @@ const userTransactionalRouter: Router = Router();
 userTransactionalRouter.use(bodyParser.json());
 
 import { FirebaseApp, initializeApp } from "firebase/app";
+import itemInterface from "../../interfaces/items/itemInterface";
 
 // * PRIVATE, PLEASE HIDE. *
 const firebaseConfig = {
@@ -46,6 +49,165 @@ userTransactionalRouter.route("/").post(async (req: Request, res: Response) => {
   res
     .status(codes["4xx_CLIENT_ERROR"].BAD_REQUEST)
     .json({ message: "Sorry :(" });
+});
+
+// ============== FOR MERCHANTS ONLY ================= //
+
+// add basura/items
+userTransactionalRouter.route('/add-items').post(async (req: Request, res: Response) => {
+  const targetCollectionName: string = "items";
+  const { emailAddress, password, itemId, itemName, itemDescription} = req.body;
+  res.setHeader('Content-Type', 'application/JSON');
+
+  if (!emailAddress || !password) {
+    return res.status(codes['4xx_CLIENT_ERROR'].BAD_REQUEST).json({ message: 'Bad request.' });
+  }
+
+  try {
+    const userDocRef = doc(firestoreDatabase, collectionName, emailAddress);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+      return res.status(codes['4xx_CLIENT_ERROR'].NOT_FOUND).json({ message: 'User not found.' });
+    }
+
+    const auth: Auth = getAuth();
+    await signInWithEmailAndPassword(auth, emailAddress, password);
+
+    const userTransactionalData = userDocSnap.data() as userAccountInterface;
+
+    if (userTransactionalData.roles !== 'merchant') {
+      return res.status(codes['4xx_CLIENT_ERROR'].FORBIDDEN).json({ message: 'Access forbidden.' });
+    }
+
+    const queriedDocRef = doc(firestoreDatabase, targetCollectionName, itemId);
+    const queriedDocSnap = await getDoc(queriedDocRef);
+
+    let itemObject: itemInterface;
+    // do not add if it exists
+    if (queriedDocSnap.exists()) {
+      return res.status(codes['4xx_CLIENT_ERROR'].NOT_FOUND).json({ message: 'Item not found.' });
+    }
+
+    // add if it exists
+    else{
+      itemObject = {
+        itemId: itemId,
+        itemName: itemName,
+        itemValidity: true, // set true by default
+        itemDescription: itemDescription != null ? itemDescription : null
+      } 
+    }
+
+    await setDoc(queriedDocRef, itemObject);
+    return res.status(codes['2xx_SUCCESS'].OK).json({
+      message: `Added item: ${itemName}`,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(codes['5xx_SERVER_ERROR'].GATEWAY_TIMEOUT).json({ message: 'Internal server error.' });
+  }
+});
+
+// update basura/items validity
+userTransactionalRouter.route('/update-item-validity').post(async (req: Request, res: Response) => {
+  const targetCollectionName: string = "items";
+  const { emailAddress, password, itemId, validity} = req.body;
+  res.setHeader('Content-Type', 'application/JSON');
+
+  if (!emailAddress || !password) {
+    return res.status(codes['4xx_CLIENT_ERROR'].BAD_REQUEST).json({ message: 'Bad request.' });
+  }
+
+  try {
+    const userDocRef = doc(firestoreDatabase, collectionName, emailAddress);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+      return res.status(codes['4xx_CLIENT_ERROR'].NOT_FOUND).json({ message: 'User not found.' });
+    }
+
+    const auth: Auth = getAuth();
+    await signInWithEmailAndPassword(auth, emailAddress, password);
+
+    const userTransactionalData = userDocSnap.data() as userAccountInterface;
+
+    if (userTransactionalData.roles !== 'merchant') {
+      return res.status(codes['4xx_CLIENT_ERROR'].FORBIDDEN).json({ message: 'Access forbidden.' });
+    }
+
+    const queriedDocRef = doc(firestoreDatabase, targetCollectionName, itemId);
+    const queriedDocSnap = await getDoc(queriedDocRef);
+
+    // do not add if it exists
+    if (queriedDocSnap.exists()) { 
+      await updateDoc(queriedDocRef, {itemValidity : validity});
+    }
+
+    // add if it exists
+    else{
+      return res.status(codes['4xx_CLIENT_ERROR'].NOT_FOUND).json({ message: 'User not found.' });       
+    }
+
+    return res.status(codes['2xx_SUCCESS'].OK).json({
+      message: `Updated validity of item to ${validity}`,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(codes['5xx_SERVER_ERROR'].GATEWAY_TIMEOUT).json({ message: 'Internal server error.' });
+  }
+});
+
+
+// delete basura/item
+userTransactionalRouter.route('/add-items').post(async (req: Request, res: Response) => {
+  const targetCollectionName: string = "items";
+  const { emailAddress, password, itemId, itemName} = req.body;
+  res.setHeader('Content-Type', 'application/JSON');
+
+  if (!emailAddress || !password) {
+    return res.status(codes['4xx_CLIENT_ERROR'].BAD_REQUEST).json({ message: 'Bad request.' });
+  }
+
+  try {
+    const userDocRef = doc(firestoreDatabase, collectionName, emailAddress);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+      return res.status(codes['4xx_CLIENT_ERROR'].NOT_FOUND).json({ message: 'User not found.' });
+    }
+
+    const auth: Auth = getAuth();
+    await signInWithEmailAndPassword(auth, emailAddress, password);
+
+    const userTransactionalData = userDocSnap.data() as userAccountInterface;
+
+    if (userTransactionalData.roles !== 'merchant') {
+      return res.status(codes['4xx_CLIENT_ERROR'].FORBIDDEN).json({ message: 'Access forbidden.' });
+    }
+
+    const queriedDocRef = doc(firestoreDatabase, targetCollectionName, itemId);
+    const queriedDocSnap = await getDoc(queriedDocRef);
+
+    // do not add if it exists
+    if (!queriedDocSnap.exists()) {
+      return res.status(codes['4xx_CLIENT_ERROR'].NOT_FOUND).json({ message: 'User not found.' });
+    }
+    // delete if it exists
+    else{
+      deleteDoc(queriedDocRef); 
+    }
+
+    return res.status(codes['2xx_SUCCESS'].OK).json({
+      message: `Deleted item: ${itemName}`,
+    });
+
+  } catch (error) {
+    console.error(error);
+    return res.status(codes['5xx_SERVER_ERROR'].GATEWAY_TIMEOUT).json({ message: 'Internal server error.' });
+  }
 });
 
 // check account balance
@@ -134,5 +296,10 @@ userTransactionalRouter.route('/update-user-account-balance').post(async (req: R
     return res.status(codes['5xx_SERVER_ERROR'].GATEWAY_TIMEOUT).json({ message: 'Internal server error.' });
   }
 });
+
+// ============== END FOR MERCHANTS ONLY ================= //
+
+
+
 
 export default userTransactionalRouter;
