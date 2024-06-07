@@ -56,7 +56,7 @@ userTransactionalRouter.route("/").post(async (req: Request, res: Response) => {
 // add basura/items
 userTransactionalRouter.route('/add-items').post(async (req: Request, res: Response) => {
   const targetCollectionName: string = "items";
-  const { emailAddress, password, itemId, itemName, itemDescription} = req.body;
+  const { emailAddress, password, itemId, itemName, itemDescription, itemPreviousOwner} = req.body;
   res.setHeader('Content-Type', 'application/JSON');
 
   if (!emailAddress || !password) {
@@ -86,13 +86,14 @@ userTransactionalRouter.route('/add-items').post(async (req: Request, res: Respo
     let itemObject: itemInterface;
     // do not add if it exists
     if (queriedDocSnap.exists()) {
-      return res.status(codes['4xx_CLIENT_ERROR'].NOT_FOUND).json({ message: 'Item not found.' });
+      return res.status(codes['4xx_CLIENT_ERROR'].NOT_FOUND).json({ message: 'Item found.' });
     }
 
     // add if it exists
     else{
       itemObject = {
         itemId: itemId,
+        itemPreviousOwner: itemPreviousOwner,
         itemName: itemName,
         itemValidity: true, // set true by default
         itemDescription: itemDescription != null ? itemDescription : null
@@ -298,8 +299,4 @@ userTransactionalRouter.route('/update-user-account-balance').post(async (req: R
 });
 
 // ============== END FOR MERCHANTS ONLY ================= //
-
-
-
-
 export default userTransactionalRouter;

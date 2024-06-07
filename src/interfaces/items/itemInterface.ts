@@ -1,6 +1,7 @@
-export default interface itemInterface{
-    itemId: number;
-    itemName: string;
-    itemValidity: boolean;
-    itemDescription: string | null;
+export default interface itemInterface {
+  itemId: number;
+  itemName: string;
+  itemValidity: boolean;
+  itemPreviousOwner: string;
+  itemDescription: string | null;
 }
