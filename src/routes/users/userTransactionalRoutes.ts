@@ -114,7 +114,7 @@ userTransactionalRouter.route('/add-items').post(async (req: Request, res: Respo
 // update basura/items validity
 userTransactionalRouter.route('/update-item-validity').post(async (req: Request, res: Response) => {
   const targetCollectionName: string = "items";
-  const { emailAddress, password, itemId, validity} = req.body;
+  const { emailAddress, password, itemId, itemValidity} = req.body;
   res.setHeader('Content-Type', 'application/JSON');
 
   if (!emailAddress || !password) {
@@ -143,7 +143,7 @@ userTransactionalRouter.route('/update-item-validity').post(async (req: Request,
 
     // do not add if it exists
     if (queriedDocSnap.exists()) { 
-      await updateDoc(queriedDocRef, {itemValidity : validity});
+      await updateDoc(queriedDocRef, {itemValidity : itemValidity});
     }
 
     // add if it exists
@@ -152,7 +152,7 @@ userTransactionalRouter.route('/update-item-validity').post(async (req: Request,
     }
 
     return res.status(codes['2xx_SUCCESS'].OK).json({
-      message: `Updated validity of item to ${validity}`,
+      message: `Updated validity of item to ${itemValidity}`,
     });
 
   } catch (error) {
